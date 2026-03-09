@@ -530,7 +530,10 @@ export default function App() {
                     <div className="space-y-1">
                       <h4 className="font-bold text-sm uppercase tracking-wider">La Proportionnelle</h4>
                       <p className="text-sm opacity-70">
-                        Les sièges restants sont répartis entre les listes admises selon la règle de la plus forte moyenne (méthode Jefferson/D'Hondt).
+                        Les sièges restants sont répartis selon la règle de la plus forte moyenne.
+                      </p>
+                      <p className="text-[11px] opacity-60 italic">
+                        Important : Pour calculer la moyenne, on divise les voix par les sièges déjà obtenus (quotient + forte moyenne), <strong>en excluant la prime majoritaire</strong>, auxquels on ajoute 1.
                       </p>
                     </div>
                   </div>
