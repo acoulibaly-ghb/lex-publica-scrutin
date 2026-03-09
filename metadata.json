@@ -1,0 +1,5 @@
+{
+  "name": "Calculateur Élections Municipales",
+  "description": "Outil pédagogique pour le calcul de la répartition des sièges aux élections municipales françaises (communes de 1 000 habitants et plus).",
+  "requestFramePermissions": []
+}
