@@ -151,7 +151,7 @@ export function calculateDistribution(
     let winnerOfSeatIndex = -1;
 
     admittedLists.forEach((list, index) => {
-      const average = list.votes / (list.totalSeats + 1);
+      const average = list.votes / (list.quotientSeats + list.highestAverageSeats + 1);
       if (average > bestAverage + 0.000001) {
         bestAverage = average;
         winnerOfSeatIndex = index;
@@ -176,7 +176,7 @@ export function calculateDistribution(
       // Check if it was a tie
       const isTie = admittedLists.some((l, idx) => 
         idx !== winnerOfSeatIndex && 
-        Math.abs((l.votes / (l.totalSeats + 1)) - bestAverage) < 0.000001
+        Math.abs((l.votes / (l.quotientSeats + l.highestAverageSeats + 1)) - bestAverage) < 0.000001
       );
 
       seatWinner.highestAverageSeats += 1;
