@@ -61,28 +61,33 @@ export default function App() {
         </section>
 
         <section>
-          <h2 className="text-xl font-bold mb-4">🎯 Résultats</h2>
-          <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl min-h-[300px]">
-            {result.noMajorityInFirstRound ? (
-              <div className="text-amber-400 p-4 border border-amber-900 rounded bg-amber-950/30">
-                <AlertTriangle className="mb-2" />
-                Pas de majorité absolue au 1er tour. [cite: 8]
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {result.admittedLists.filter(l => l.isAdmitted).sort((a,b) => b.totalSeats - a.totalSeats).map((l, i) => (
-                  <div key={l.id} className={`p-4 rounded-lg flex justify-between items-center ${i === 0 ? 'bg-emerald-900/50 border border-emerald-500' : 'bg-slate-800'}`}>
-                    <div>
-                      <span className="font-bold">{l.name}</span>
-                      {i === 0 && <span className="ml-2 text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full uppercase">Majorité [cite: 6, 44]</span>}
-                    </div>
-                    <span className="text-3xl font-black">{l.totalSeats}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+  <h2 className="text-xl font-bold mb-4">🎯 Résultats</h2>
+  <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl min-h-[300px]">
+    
+    {/* LA PROTESTATION DE L'APPLI */}
+    {populationExceeded ? (
+      <div className="text-center p-8 bg-red-950 border border-red-700 rounded-xl text-red-200">
+        <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+        <p className="font-bold text-lg">Incohérence détectée !</p>
+        <p className="text-sm mt-2">Le total des voix ({sumOfVotes}) dépasse la population totale ({population}). Le calcul est suspendu.</p>
+      </div>
+    ) : result.noMajorityInFirstRound ? (
+      <div className="text-amber-400 p-4 border border-amber-900 rounded bg-amber-950/30">
+        <AlertTriangle className="mb-2" />
+        Pas de majorité absolue au 1er tour.
+      </div>
+    ) : (
+      <div className="space-y-4">
+        {result.admittedLists.filter(l => l.isAdmitted).sort((a,b) => b.totalSeats - a.totalSeats).map((l, i) => (
+          <div key={l.id} className={`p-4 rounded-lg flex justify-between items-center ${i === 0 ? 'bg-emerald-900/50 border border-emerald-500' : 'bg-slate-800'}`}>
+            <span className="font-bold">{l.name}</span>
+            <span className="text-3xl font-black">{l.totalSeats}</span>
           </div>
-        </section>
+        ))}
+      </div>
+    )}
+  </div>
+</section>
       </div>
     </div>
   );
