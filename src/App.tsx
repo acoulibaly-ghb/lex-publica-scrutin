@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle2, AlertTriangle, AlertCircle, RotateCcw, Lightbulb } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, AlertTriangle, AlertCircle, RotateCcw, Lightbulb, Users, Scale } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { calculateDistribution } from './utils/electionEngine';
 import { getSeatsFromPopulation } from './utils/populationMapping';
@@ -10,82 +10,112 @@ export default function App() {
   const [population, setPopulation] = useState<number | undefined>(1800);
   const [round, setRound] = useState<ElectionRound>(1);
   const [cityType, setCityType] = useState<CityType>('STANDARD');
-  const [manualTotalVotes, setManualTotalVotes] = useState<number | undefined>(1883);
+  const [manualTotalVotes, setManualTotalVotes] = useState<number | undefined>(undefined);
   const [lists, setLists] = useState<CandidateList[]>([
-    { id: '1', name: 'Liste A', votes: 979 },
-    { id: '2', name: 'Liste B', votes: 814 },
-    { id: '3', name: 'Liste C', votes: 90 },
+    { id: '1', name: 'Liste A', votes: 101 },
+    { id: '2', name: 'Liste B', votes: 54 },
+    { id: '3', name: 'Liste C', votes: 45 },
   ]);
 
-  // Synchronisation Population -> Sièges selon le barème légal 
+  // Synchronisation Population -> Sièges
   useEffect(() => {
     if (population) setTotalSeats(getSeatsFromPopulation(population));
   }, [population]);
 
   const sumOfVotes = useMemo(() => lists.reduce((s, l) => s + l.votes, 0), [lists]);
   
-  // Vérification de cohérence : les voix ne peuvent pas dépasser la population
+  // Sécurité : Vérification de cohérence voix/population
   const populationExceeded = population !== undefined && sumOfVotes > population;
 
   const result = useMemo(() => {
-    return calculateDistribution(totalSeats, lists, manualTotalVotes, round, cityType);
-  }, [totalSeats, lists, manualTotalVotes, round, cityType]);
+    return calculateDistribution(totalSeats, lists, manualTotalVotes || sumOfVotes, round, cityType);
+  }, [totalSeats, lists, manualTotalVotes, sumOfVotes, round, cityType]);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8 text-slate-900">
-      <header className="mb-10 border-b pb-6 flex justify-between items-end">
+    <div className="min-h-screen bg-slate-50 p-8 text-slate-900 font-sans">
+      <header className="mb-10 border-b border-slate-200 pb-6 flex justify-between items-end">
         <div>
-          <h1 className="text-4xl font-serif font-bold italic tracking-tighter">Lex Publica</h1>
-          <p className="text-sm text-slate-500 uppercase tracking-widest font-medium">Répartition des sièges municipaux</p>
+          <h1 className="text-4xl font-serif font-black italic tracking-tighter text-slate-950">Lex Publica</h1>
+          <p className="text-sm text-slate-500 uppercase tracking-widest font-bold">Répartition des sièges municipaux</p>
         </div>
-        <button onClick={() => window.location.reload()} className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
+        <button onClick={() => window.location.reload()} className="p-2 text-slate-400 hover:text-slate-900 transition-colors bg-white rounded-full shadow-sm border border-slate-100">
           <RotateCcw className="w-5 h-5" />
         </button>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* CONFIGURATION */}
-        <section className="space-y-8">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Users className="w-5 h-5 text-slate-400"/> Paramètres</h2>
+        <section className="space-y-6">
+          <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-6">
             
+            {/* 1. Tour de scrutin */}
+            <div>
+              <label className="block text-xs font-black text-slate-400 uppercase mb-3 tracking-widest text-center">Étape 1 : Tour de scrutin</label>
+              <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+                <button 
+                  onClick={() => setRound(1)} 
+                  className={`flex-1 py-3 rounded-xl text-sm font-black transition-all ${round === 1 ? 'bg-white shadow-md text-slate-950 translate-y-[-1px]' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  1er Tour
+                </button>
+                <button 
+                  onClick={() => setRound(2)} 
+                  className={`flex-1 py-3 rounded-xl text-sm font-black transition-all ${round === 2 ? 'bg-white shadow-md text-slate-950 translate-y-[-1px]' : 'text-slate-500 hover:text-slate-700'}`}
+                >
+                  2nd Tour
+                </button>
+              </div>
+              <p className="text-[10px] text-center mt-2 text-slate-400 font-bold italic">
+                {round === 1 ? "Majorité absolue (>50%) requise pour la prime" : "Majorité relative suffisante pour la prime"} [cite: 6, 8, 41]
+              </p>
+            </div>
+
+            <hr className="border-slate-100" />
+
+            {/* 2. Population & Ville */}
             <div className="space-y-4">
+              <label className="block text-xs font-black text-slate-400 uppercase tracking-widest text-center">Étape 2 : Contexte</label>
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Population de la commune</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1 tracking-tighter">Population légale</label>
                 <input 
                   type="number" 
                   value={population} 
                   onChange={e => setPopulation(Number(e.target.value))} 
-                  className={`w-full p-3 border rounded-xl text-xl font-black ${populationExceeded ? 'border-red-500 bg-red-50' : 'border-slate-200 focus:ring-2 focus:ring-slate-900'}`} 
+                  className={`w-full p-4 border rounded-2xl text-2xl font-black focus:ring-4 focus:ring-slate-100 outline-none transition-all ${populationExceeded ? 'border-red-500 bg-red-50 text-red-900' : 'border-slate-200 bg-slate-50'}`} 
                 />
-                <p className="mt-2 text-sm font-medium text-slate-600 italic">
-                  Conseil municipal : <span className="text-slate-900 font-bold">{totalSeats} sièges</span> 
-                </p>
+                <div className="mt-3 flex justify-between items-center px-1 text-sm font-black text-slate-900">
+                  <span className="flex items-center gap-1.5"><Users className="w-4 h-4 text-slate-400" /> {totalSeats} sièges au conseil</span>
+                  <span className="text-[10px] text-slate-400 uppercase tracking-tighter italic font-bold">Source : Code électoral [cite: 61]</span>
+                </div>
               </div>
 
               <div className="flex gap-2">
-                <button onClick={() => setCityType('STANDARD')} className={`flex-1 p-3 rounded-xl border text-sm font-bold transition-all ${cityType === 'STANDARD' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>Standard</button>
-                <button onClick={() => setCityType('PLM')} className={`flex-1 p-3 rounded-xl border text-sm font-bold transition-all ${cityType === 'PLM' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-600 hover:bg-slate-50'}`}>Paris / Lyon / Marseille</button>
+                <button onClick={() => setCityType('STANDARD')} className={`flex-1 p-3 rounded-xl border text-xs font-black transition-all ${cityType === 'STANDARD' ? 'bg-slate-950 text-white shadow-xl' : 'bg-white text-slate-400 hover:bg-slate-50'}`}>Commune Standard</button>
+                <button onClick={() => setCityType('PLM')} className={`flex-1 p-3 rounded-xl border text-xs font-black transition-all ${cityType === 'PLM' ? 'bg-slate-950 text-white shadow-xl' : 'bg-white text-slate-400 hover:bg-slate-50'}`}>Paris / Lyon / Marseille</button>
               </div>
             </div>
           </div>
 
+          {/* 3. Listes */}
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold flex items-center gap-2"><Scale className="w-5 h-5 text-slate-400"/> Voix par liste</h2>
-              <button onClick={() => setLists([...lists, {id: crypto.randomUUID(), name: `Liste ${String.fromCharCode(65 + lists.length)}`, votes: 0}])} className="text-xs font-bold bg-slate-900 text-white px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-1">
-                <Plus className="w-3 h-3" /> Ajouter
+            <div className="flex justify-between items-center px-2">
+              <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 flex items-center gap-2"><Scale className="w-4 h-4"/> Voix par liste</h2>
+              <button onClick={() => setLists([...lists, {id: crypto.randomUUID(), name: `Liste ${String.fromCharCode(65 + lists.length)}`, votes: 0}])} className="text-[10px] font-black bg-slate-950 text-white px-4 py-2 rounded-xl hover:bg-slate-800 transition-all active:scale-95 shadow-lg flex items-center gap-1">
+                <Plus className="w-3 h-3" /> Nouvelle Liste
               </button>
             </div>
 
             <div className="space-y-2">
               <AnimatePresence>
                 {lists.map((l, index) => (
-                  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key={l.id} className="flex gap-3 items-center bg-white p-2 rounded-xl border border-slate-200 group">
-                    <div className={`w-1 h-10 rounded-full ${['bg-blue-500', 'bg-red-500', 'bg-emerald-500', 'bg-amber-500'][index % 4]}`} />
-                    <input value={l.name} onChange={e => setLists(lists.map(item => item.id === l.id ? {...item, name: e.target.value} : item))} className="flex-grow p-2 text-sm font-medium focus:outline-none" />
-                    <input type="number" value={l.votes} onChange={e => setLists(lists.map(item => item.id === l.id ? {...item, votes: Number(e.target.value)} : item))} className="w-24 p-2 text-right font-mono font-bold text-slate-700 bg-slate-50 rounded-lg" />
-                    <button onClick={() => setLists(lists.filter(item => item.id !== l.id))} className="p-2 text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-4 h-4" /></button>
+                  <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} key={l.id} className="flex gap-3 items-center bg-white p-3 rounded-2xl border border-slate-200 shadow-sm group hover:border-slate-400 transition-all">
+                    <div className={`w-1.5 h-8 rounded-full ${['bg-indigo-500', 'bg-rose-500', 'bg-emerald-500', 'bg-amber-500', 'bg-violet-500'][index % 5]}`} />
+                    <input value={l.name} onChange={e => setLists(lists.map(item => item.id === l.id ? {...item, name: e.target.value} : item))} className="flex-grow p-1 text-sm font-black text-slate-800 focus:outline-none" />
+                    <div className="relative">
+                      <input type="number" value={l.votes} onChange={e => setLists(lists.map(item => item.id === l.id ? {...item, votes: Number(e.target.value)} : item))} className="w-28 p-2 text-right font-mono font-black text-slate-950 bg-slate-50 rounded-xl border border-slate-100 focus:bg-white focus:ring-2 focus:ring-slate-900 outline-none" />
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[8px] font-black text-slate-300 uppercase">Voix</span>
+                    </div>
+                    <button onClick={() => setLists(lists.filter(item => item.id !== l.id))} className="p-2 text-slate-200 hover:text-rose-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -94,24 +124,25 @@ export default function App() {
         </section>
 
         {/* RÉSULTATS */}
-        <section>
-          <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-slate-950">🎯 Résultats de la répartition</h2>
-          <div className="bg-slate-950 text-white p-8 rounded-[2rem] shadow-2xl min-h-[400px] flex flex-col border border-slate-800">
+        <section className="relative">
+          <h2 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4 px-2">🎯 Répartition finale</h2>
+          <div className="bg-slate-950 text-white p-8 rounded-[3rem] shadow-2xl min-h-[500px] flex flex-col border-4 border-slate-900 sticky top-8">
             
             {populationExceeded ? (
-              <div className="flex-grow flex flex-col items-center justify-center text-center space-y-4">
-                <div className="bg-red-500/20 p-4 rounded-full"><AlertCircle className="w-12 h-12 text-red-500 animate-pulse" /></div>
+              <div className="flex-grow flex flex-col items-center justify-center text-center space-y-6">
+                <div className="bg-rose-500/20 p-6 rounded-full border-2 border-rose-500/50"><AlertCircle className="w-16 h-16 text-rose-500 animate-pulse" /></div>
                 <div>
-                  <p className="text-xl font-black text-red-400">Incohérence majeure</p>
-                  <p className="text-slate-400 text-sm mt-2 max-w-xs mx-auto italic">Le nombre de suffrages exprimés ({sumOfVotes}) ne peut être supérieur à la population ({population}).</p>
+                  <p className="text-2xl font-black text-rose-500 uppercase tracking-tighter">Incohérence majeure</p>
+                  <p className="text-slate-400 text-sm mt-3 max-w-xs mx-auto font-medium">Le total des suffrages ({sumOfVotes.toLocaleString()}) dépasse la population légale ({population?.toLocaleString()}).</p>
                 </div>
               </div>
-            ) : result.noMajorityInFirstRound ? (
-              <div className="flex-grow flex flex-col items-center justify-center text-center space-y-4">
-                <div className="bg-amber-500/20 p-4 rounded-full"><AlertTriangle className="w-12 h-12 text-amber-500" /></div>
+            ) : result.noMajorityInFirstRound && round === 1 ? (
+              <div className="flex-grow flex flex-col items-center justify-center text-center space-y-6">
+                <div className="bg-amber-500/20 p-6 rounded-full border-2 border-amber-500/50"><AlertTriangle className="w-16 h-16 text-amber-500" /></div>
                 <div>
-                  <p className="text-xl font-black text-amber-400">Ballotage</p>
-                  <p className="text-slate-400 text-sm mt-2">Aucune liste n'obtient la majorité absolue au premier tour. Un second tour est nécessaire.</p>
+                  <p className="text-2xl font-black text-amber-400 uppercase tracking-tighter italic">Ballotage</p>
+                  <p className="text-slate-400 text-sm mt-3 max-w-xs mx-auto">Aucune liste n'obtient la majorité absolue au 1er tour. Les sièges ne peuvent être répartis.</p>
+                  <button onClick={() => setRound(2)} className="mt-8 px-6 py-3 bg-white text-slate-950 rounded-2xl font-black text-xs hover:scale-105 transition-transform">Simuler le 2nd Tour</button>
                 </div>
               </div>
             ) : (
@@ -120,25 +151,28 @@ export default function App() {
                   .filter(l => l.isAdmitted && l.totalSeats > 0)
                   .sort((a,b) => b.totalSeats - a.totalSeats)
                   .map((l, i) => (
-                    <motion.div layout key={l.id} className={`p-5 rounded-2xl flex justify-between items-center ${i === 0 ? 'bg-emerald-500/10 border border-emerald-500/30' : 'bg-white/5 border border-white/10'}`}>
-                      <div className="flex items-center gap-4">
-                        <div className={`text-2xl font-black ${i === 0 ? 'text-emerald-400' : 'text-slate-500'}`}>{i + 1}</div>
+                    <motion.div layout key={l.id} className={`p-6 rounded-[2rem] flex justify-between items-center transition-all ${i === 0 ? 'bg-emerald-500/10 border-2 border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : 'bg-white/5 border border-white/10'}`}>
+                      <div className="flex items-center gap-5">
+                        <div className={`text-4xl font-black italic ${i === 0 ? 'text-emerald-400' : 'text-slate-700'}`}>{i + 1}</div>
                         <div>
-                          <p className="font-bold text-lg leading-none">{l.name}</p>
-                          <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-tighter">{l.votes.toLocaleString()} voix • {l.percentage.toFixed(2)}%</p>
+                          <p className="font-black text-xl leading-none">{l.name}</p>
+                          <p className="text-[10px] text-slate-500 mt-2 uppercase font-black tracking-widest italic">{l.votes.toLocaleString()} voix • {l.percentage.toFixed(2)}%</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <span className={`text-5xl font-black ${i === 0 ? 'text-emerald-400' : 'text-white'}`}>{l.totalSeats}</span>
-                        <p className="text-[10px] text-slate-500 uppercase font-bold">Sièges</p>
+                        <div className="flex items-baseline gap-1 justify-end">
+                          <span className={`text-6xl font-black tracking-tighter ${i === 0 ? 'text-emerald-400' : 'text-white'}`}>{l.totalSeats}</span>
+                          <span className={`text-[10px] font-black uppercase tracking-tighter ${i === 0 ? 'text-emerald-500' : 'text-slate-600'}`}>{l.totalSeats > 1 ? 'Sièges' : 'Siège'}</span>
+                        </div>
+                        {i === 0 && <p className="text-[8px] font-black text-emerald-500/80 uppercase tracking-widest mt-1 italic">Prime de {cityType === 'PLM' ? '25%' : '50%'} incluse</p>}
                       </div>
                     </motion.div>
                 ))}
               </div>
             )}
 
-            <div className="mt-auto pt-8 border-t border-white/5 text-[10px] text-slate-600 uppercase font-bold tracking-widest text-center">
-              Mode de scrutin proportionnel • Prime majoritaire incluse
+            <div className="mt-auto pt-8 border-t border-white/5 text-[9px] text-slate-600 uppercase font-black tracking-[0.2em] text-center italic">
+              Algorithme Lex Publica • Art. L.262 du Code électoral
             </div>
           </div>
         </section>
@@ -146,7 +180,3 @@ export default function App() {
     </div>
   );
 }
-
-// Composants Lucide manquants dans l'import précédent
-function Users(props: any) { return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>; }
-function Scale(props: any) { return <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h18"/></svg>; }
