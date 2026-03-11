@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Trash2, CheckCircle2, AlertTriangle, AlertCircle, RotateCcw, Scale, Users, Lightbulb, X, ChevronDown, PieChart as PieIcon } from 'lucide-react';
+import { Plus, Trash2, CheckCircle2, AlertTriangle, AlertCircle, RotateCcw, Scale, Users, Lightbulb, X, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { calculateDistribution } from './utils/electionEngine';
@@ -29,9 +29,9 @@ export default function App() {
   const [showHelp, setShowHelp] = useState(false);
   
   const [lists, setLists] = useState<CandidateList[]>([
-    { id: '1', name: 'Liste A', votes: 979 },
-    { id: '2', name: 'Liste B', votes: 814 },
-    { id: '3', name: 'Liste C', votes: 90 },
+    { id: '1', name: 'Liste A', votes: 101 },
+    { id: '2', name: 'Liste B', votes: 54 },
+    { id: '3', name: 'Liste C', votes: 45 },
   ]);
 
   // Synchronisation des sièges selon le régime
@@ -43,10 +43,28 @@ export default function App() {
     }
   }, [cityType, rangeIndex, plmCity]);
 
+  // Modifie la strate depuis le menu déroulant
   const updateByRangeIndex = (idx: number) => {
     setRangeIndex(idx);
     const range = POPULATION_SEATS_MAPPING[idx];
     setPopulation(range.max === Infinity ? range.min : range.max);
+  };
+
+  // NOUVEAU : Met à jour la strate automatiquement si on tape la population réelle
+  const handlePopulationChange = (val: string) => {
+    if (val === '') {
+      setPopulation('');
+      return;
+    }
+    const num = Number(val);
+    setPopulation(num);
+    
+    if (cityType === 'STANDARD') {
+      const newIdx = POPULATION_SEATS_MAPPING.findIndex(r => num >= r.min && num <= r.max);
+      if (newIdx !== -1 && newIdx !== rangeIndex) {
+        setRangeIndex(newIdx);
+      }
+    }
   };
 
   // SECURITÉ ANTI-BUG
@@ -55,7 +73,7 @@ export default function App() {
   const safeLists = lists.map(l => ({ ...l, votes: Number(l.votes) || 0 }));
   const sumOfVotes = safeLists.reduce((s, l) => s + l.votes, 0);
   
-  // En PLM, on ignore la population pour les alertes (c'est une élection par secteur dans la réalité, mais globalisée ici pour l'exemple)
+  // En PLM, on ignore la population pour les alertes (élection par secteur dans la réalité)
   const errorPopulation = cityType === 'STANDARD' && safeExprimés > safePopulation;
   const errorVotes = sumOfVotes > safeExprimés;
 
@@ -140,7 +158,7 @@ export default function App() {
                   </div>
                   <div className="space-y-2">
                     <span className="text-[10px] font-black text-slate-400 uppercase ml-1">Population réelle</span>
-                    <input type="number" value={population} onChange={e => setPopulation(e.target.value === '' ? '' : Number(e.target.value))} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-lg font-black outline-none" />
+                    <input type="number" value={population} onChange={e => handlePopulationChange(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-lg font-black outline-none focus:ring-4 focus:ring-slate-100 transition-all" />
                   </div>
                 </div>
               ) : (
@@ -252,12 +270,14 @@ export default function App() {
                           <p className="font-black text-xl leading-none uppercase">{l.name}</p>
                           <div className="mt-2 flex items-center gap-2">
                              <span className="text-[10px] font-black text-sky-400 bg-sky-400/10 px-2 py-0.5 rounded-md italic">{l.percentage.toFixed(2)}%</span>
+                             <span className="text-[10px] text-slate-500 uppercase font-black tracking-tighter">{l.votes.toLocaleString()} voix</span>
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="flex items-baseline gap-1 justify-end">
+                        <div className="flex items-baseline gap-1.5 justify-end">
                            <span className={`text-5xl font-black tracking-tighter ${i === 0 ? 'text-emerald-400' : 'text-white'}`}>{l.totalSeats}</span>
+                           <span className={`text-[10px] font-black uppercase tracking-tighter mb-1 ${i === 0 ? 'text-emerald-600' : 'text-slate-500'}`}>{l.totalSeats > 1 ? 'Sièges' : 'Siège'}</span>
                         </div>
                         {i === 0 && <p className="text-[7px] font-black text-emerald-500 uppercase tracking-widest mt-1 italic leading-none">+ Prime {cityType === 'PLM' ? '25%' : '50%'}</p>}
                       </div>
