@@ -61,9 +61,9 @@ export default function App() {
               <h2 className="text-3xl font-serif font-black italic mb-6 text-slate-900">Mémento Municipal 2026</h2>
               <div className="space-y-4 text-slate-700 text-sm leading-relaxed">
                 <p className="p-4 bg-amber-50 rounded-2xl border border-amber-100 font-bold text-amber-900 italic">
-                  "Loi n°2025-444 : Le scrutin proportionnel est désormais la règle universelle pour toutes les communes de France."
+                  "Loi n°2025-444 : Le scrutin proportionnel avec prime majoritaire est désormais la règle pour toutes les communes de France."
                 </p>
-                <p><strong>Effectif Légal :</strong> Fixé par la strate de population de la commune.</p>
+                <p><strong>Effectif Légal :</strong> Fixé par la strate de population de la commune, sauf PLM.</p>
                 <p><strong>Prime Majoritaire :</strong> 50% des sièges (Standard) ou 25% (PLM) à la liste arrivée en tête.</p>
                 <p><strong>Plus forte moyenne :</strong> Les sièges restants sont attribués un par un. On divise les voix par les sièges proportionnels + 1 (la prime majoritaire ne compte pas dans le diviseur).</p>
               </div>
