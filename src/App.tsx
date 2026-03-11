@@ -15,16 +15,16 @@ const PLM_CITIES = {
 export default function App() {
   const [cityType, setCityType] = useState<CityType>('STANDARD');
   
-  // États Droit Commun
-  const [rangeIndex, setRangeIndex] = useState<number>(4); 
-  const [population, setPopulation] = useState<number | ''>(3000);
+  // États Droit Commun (Modifiés pour un démarrage parfait)
+  const [rangeIndex, setRangeIndex] = useState<number>(1); // Index 1 correspond à "100 à 499 hab."
+  const [population, setPopulation] = useState<number | ''>(300);
   
   // États PLM
   const [plmCity, setPlmCity] = useState<keyof typeof PLM_CITIES>('Paris');
 
-  // États Communs
-  const [totalSeats, setTotalSeats] = useState<number>(POPULATION_SEATS_MAPPING[4].seats);
-  const [exprimés, setExprimés] = useState<number | ''>(1883);
+  // États Communs (Modifiés pour correspondre à 300 habitants)
+  const [totalSeats, setTotalSeats] = useState<number>(11);
+  const [exprimés, setExprimés] = useState<number | ''>(200);
   const [round, setRound] = useState<ElectionRound>(1);
   const [showHelp, setShowHelp] = useState(false);
   
