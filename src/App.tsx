@@ -118,7 +118,7 @@ export default function App() {
       <header className="mb-10 border-b border-slate-200 pb-6 flex justify-between items-end">
         <div>
           <h1 className="text-4xl font-serif font-black italic tracking-tighter text-slate-950 leading-none">Lex Publica</h1>
-          <p className="text-sm text-slate-500 uppercase tracking-widest font-bold italic mt-2">Simulateur Électoral • L.262 & L.272-4-1</p>
+          <p className="text-sm text-slate-500 uppercase tracking-widest font-bold italic mt-2">Simulateur Électoral • By A. Coulibaly</p>
         </div>
         <div className="flex gap-3">
           <button onClick={() => setShowHelp(true)} className="p-3 bg-amber-400 text-slate-950 rounded-2xl shadow-lg border-b-4 border-amber-600 hover:scale-105 transition-all"><Lightbulb /></button>
