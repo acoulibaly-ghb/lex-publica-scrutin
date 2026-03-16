@@ -28,14 +28,14 @@ export default function App() {
   
   const [plmCity, setPlmCity] = useState<keyof typeof PLM_CITIES>('Paris');
 
-  const [exprimés, setExprimés] = useState<number | ''>(149643);
+  const [exprimés, setExprimés] = useState<number | ''>(200);
   const [round, setRound] = useState<ElectionRound>(1);
   const [showHelp, setShowHelp] = useState(false);
   
   const [lists, setLists] = useState<CandidateList[]>([
-    { id: '1', name: 'MOUDENC - Protégeons l\'avenir...', votes: 56107 },
-    { id: '2', name: 'PIQUEMAL - Toulouse à gauche...', votes: 40983 },
-    { id: '3', name: 'BRIANÇON - Vivre mieux...', votes: 37230 },
+    { id: '1', name: 'Liste A', votes: 101 },
+    { id: '2', name: 'Liste B', votes: 54 },
+    { id: '3', name: 'Liste C', votes: 45 },
   ]);
 
   // --- LA TRINITÉ SYNCHRONISÉE ---
