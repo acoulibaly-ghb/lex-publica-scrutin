@@ -12,13 +12,19 @@ const PLM_CITIES = {
   Lyon: 73 
 };
 
+// --- DÉTECTION AUTOMATIQUE AU DÉMARRAGE ---
+const START_POPULATION = 300000;
+// L'appli cherche toute seule la bonne strate pour 300 000 habitants
+const detectedIndex = POPULATION_SEATS_MAPPING.findIndex(r => START_POPULATION >= r.min && START_POPULATION <= r.max);
+const START_INDEX = detectedIndex !== -1 ? detectedIndex : POPULATION_SEATS_MAPPING.length - 1;
+
 export default function App() {
   const [cityType, setCityType] = useState<CityType>('STANDARD');
   
-  // Démarrage par défaut (Ex: Toulouse)
-  const [rangeIndex, setRangeIndex] = useState<number>(20); 
-  const [population, setPopulation] = useState<number | ''>(300000);
-  const [totalSeats, setTotalSeats] = useState<number>(69);
+  // La Trinité démarre parfaitement synchronisée
+  const [rangeIndex, setRangeIndex] = useState<number>(START_INDEX); 
+  const [population, setPopulation] = useState<number | ''>(START_POPULATION);
+  const [totalSeats, setTotalSeats] = useState<number>(POPULATION_SEATS_MAPPING[START_INDEX].seats);
   
   const [plmCity, setPlmCity] = useState<keyof typeof PLM_CITIES>('Paris');
 
@@ -32,13 +38,13 @@ export default function App() {
     { id: '3', name: 'BRIANÇON - Vivre mieux...', votes: 37230 },
   ]);
 
-  // LA TRINITÉ SYNCHRONISÉE : Les 3 fonctions qui interconnectent tout
+  // --- LA TRINITÉ SYNCHRONISÉE ---
   
   // 1. Entrée par la STRATE
   const updateByRangeIndex = (idx: number) => {
     setRangeIndex(idx);
     const range = POPULATION_SEATS_MAPPING[idx];
-    setPopulation(range.max === Infinity ? range.min : range.max);
+    setPopulation(range.min); // On aligne la population sur le minimum de la strate
     setTotalSeats(range.seats);
   };
 
@@ -66,8 +72,7 @@ export default function App() {
     if (newIdx !== -1) {
       setRangeIndex(newIdx);
       setTotalSeats(seats);
-      const range = POPULATION_SEATS_MAPPING[newIdx];
-      setPopulation(range.max === Infinity ? range.min : range.max);
+      setPopulation(POPULATION_SEATS_MAPPING[newIdx].min); // On aligne sur le minimum
     }
   };
 
@@ -75,8 +80,11 @@ export default function App() {
   useEffect(() => {
     if (cityType === 'PLM') {
       setTotalSeats(PLM_CITIES[plmCity]);
+    } else {
+      // Retour au standard : on resynchronise par rapport à la strate actuelle
+      setTotalSeats(POPULATION_SEATS_MAPPING[rangeIndex].seats);
     }
-  }, [cityType, plmCity]);
+  }, [cityType, plmCity, rangeIndex]);
 
   // SECURITÉ ANTI-BUG
   const safePopulation = Number(population) || 0;
