@@ -7,50 +7,42 @@ import { POPULATION_SEATS_MAPPING } from './utils/populationMapping';
 import { CandidateList, ElectionRound, CityType } from './types';
 
 const PLM_CITIES = {
-  Paris: 163, // Art. L.2512-3 CGCT
-  Marseille: 111, // Art. L.2513-1 CGCT (Modifié Loi 2025-795)
-  Lyon: 73 // CGCT
+  Paris: 163, 
+  Marseille: 111, 
+  Lyon: 73 
 };
 
 export default function App() {
   const [cityType, setCityType] = useState<CityType>('STANDARD');
   
-  // États Droit Commun (Modifiés pour un démarrage parfait)
-  const [rangeIndex, setRangeIndex] = useState<number>(1); // Index 1 correspond à "100 à 499 hab."
-  const [population, setPopulation] = useState<number | ''>(300);
+  // Démarrage par défaut (Ex: Toulouse)
+  const [rangeIndex, setRangeIndex] = useState<number>(20); 
+  const [population, setPopulation] = useState<number | ''>(300000);
+  const [totalSeats, setTotalSeats] = useState<number>(69);
   
-  // États PLM
   const [plmCity, setPlmCity] = useState<keyof typeof PLM_CITIES>('Paris');
 
-  // États Communs (Modifiés pour correspondre à 300 habitants)
-  const [totalSeats, setTotalSeats] = useState<number>(11);
-  const [exprimés, setExprimés] = useState<number | ''>(200);
+  const [exprimés, setExprimés] = useState<number | ''>(149643);
   const [round, setRound] = useState<ElectionRound>(1);
   const [showHelp, setShowHelp] = useState(false);
   
   const [lists, setLists] = useState<CandidateList[]>([
-    { id: '1', name: 'Liste A', votes: 101 },
-    { id: '2', name: 'Liste B', votes: 54 },
-    { id: '3', name: 'Liste C', votes: 45 },
+    { id: '1', name: 'MOUDENC - Protégeons l\'avenir...', votes: 56107 },
+    { id: '2', name: 'PIQUEMAL - Toulouse à gauche...', votes: 40983 },
+    { id: '3', name: 'BRIANÇON - Vivre mieux...', votes: 37230 },
   ]);
 
-  // Synchronisation des sièges selon le régime
-  useEffect(() => {
-    if (cityType === 'STANDARD') {
-      setTotalSeats(POPULATION_SEATS_MAPPING[rangeIndex].seats);
-    } else {
-      setTotalSeats(PLM_CITIES[plmCity]);
-    }
-  }, [cityType, rangeIndex, plmCity]);
-
-  // Modifie la strate depuis le menu déroulant
+  // LA TRINITÉ SYNCHRONISÉE : Les 3 fonctions qui interconnectent tout
+  
+  // 1. Entrée par la STRATE
   const updateByRangeIndex = (idx: number) => {
     setRangeIndex(idx);
     const range = POPULATION_SEATS_MAPPING[idx];
     setPopulation(range.max === Infinity ? range.min : range.max);
+    setTotalSeats(range.seats);
   };
 
-  // NOUVEAU : Met à jour la strate automatiquement si on tape la population réelle
+  // 2. Entrée par la POPULATION RÉELLE
   const handlePopulationChange = (val: string) => {
     if (val === '') {
       setPopulation('');
@@ -63,9 +55,28 @@ export default function App() {
       const newIdx = POPULATION_SEATS_MAPPING.findIndex(r => num >= r.min && num <= r.max);
       if (newIdx !== -1 && newIdx !== rangeIndex) {
         setRangeIndex(newIdx);
+        setTotalSeats(POPULATION_SEATS_MAPPING[newIdx].seats);
       }
     }
   };
+
+  // 3. Entrée par les SIÈGES
+  const updateBySeats = (seats: number) => {
+    const newIdx = POPULATION_SEATS_MAPPING.findIndex(r => r.seats === seats);
+    if (newIdx !== -1) {
+      setRangeIndex(newIdx);
+      setTotalSeats(seats);
+      const range = POPULATION_SEATS_MAPPING[newIdx];
+      setPopulation(range.max === Infinity ? range.min : range.max);
+    }
+  };
+
+  // Effet pour forcer le nombre de sièges en mode PLM
+  useEffect(() => {
+    if (cityType === 'PLM') {
+      setTotalSeats(PLM_CITIES[plmCity]);
+    }
+  }, [cityType, plmCity]);
 
   // SECURITÉ ANTI-BUG
   const safePopulation = Number(population) || 0;
@@ -73,13 +84,14 @@ export default function App() {
   const safeLists = lists.map(l => ({ ...l, votes: Number(l.votes) || 0 }));
   const sumOfVotes = safeLists.reduce((s, l) => s + l.votes, 0);
   
-  // En PLM, on ignore la population pour les alertes (élection par secteur dans la réalité)
   const errorPopulation = cityType === 'STANDARD' && safeExprimés > safePopulation;
   const errorVotes = sumOfVotes > safeExprimés;
+  const errorNoAdmitted = safeExprimés > 0 && safeLists.every(l => l.votes < safeExprimés * 0.05);
 
   const result = useMemo(() => {
+    if (errorNoAdmitted || errorPopulation || errorVotes) return null;
     return calculateDistribution(totalSeats, safeLists, safeExprimés, round, cityType);
-  }, [totalSeats, safeLists, safeExprimés, round, cityType]);
+  }, [totalSeats, safeLists, safeExprimés, round, cityType, errorNoAdmitted, errorPopulation, errorVotes]);
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 text-slate-900 font-sans">
@@ -92,23 +104,15 @@ export default function App() {
               <button onClick={() => setShowHelp(false)} className="absolute top-6 right-6 p-2 hover:bg-slate-100 rounded-full"><X /></button>
               <h2 className="text-3xl font-serif font-black italic mb-6 text-slate-900">Mémento Municipal 2026</h2>
               <div className="space-y-6 text-slate-700 text-sm leading-relaxed">
-                
                 <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                  <h3 className="font-black text-amber-900 uppercase tracking-widest text-xs mb-2">Droit Commun (Loi 2025-444)</h3>
+                  <h3 className="font-black text-amber-900 uppercase tracking-widest text-xs mb-2">Droit Commun</h3>
                   <p>Harmonisation pour toutes les communes. <strong>Prime majoritaire de 50%</strong> (Art. L.262) avec arrondi supérieur si {'>'} 4 sièges.</p>
                 </div>
-
                 <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
                   <h3 className="font-black text-blue-900 uppercase tracking-widest text-xs mb-2">Régime Spécial PLM</h3>
                   <p><strong>Loi n°2025-795 du 11 août 2025</strong> : La prime pour Paris, Lyon et Marseille est réduite au <strong>quart (25%)</strong> des sièges à pourvoir (Art. L.272-4-1).</p>
-                  <ul className="mt-2 space-y-1 text-blue-800 font-bold italic">
-                    <li>Paris : 163 membres (Art. L.2512-3)</li>
-                    <li>Marseille : 111 membres (Art. L.2513-1)</li>
-                    <li>Lyon : 73 membres</li>
-                  </ul>
                 </div>
-
-                <p><strong>Règle de la Moyenne :</strong> Les sièges restants sont attribués à la plus forte moyenne. En cas d'égalité, le siège va à la liste ayant le plus de suffrages, puis à la moyenne d'âge la plus élevée (Art. L.262).</p>
+                <p><strong>Règle de la Moyenne :</strong> Les sièges restants sont attribués à la plus forte moyenne (Art. L.262).</p>
               </div>
             </motion.div>
           </motion.div>
@@ -118,7 +122,7 @@ export default function App() {
       <header className="mb-10 border-b border-slate-200 pb-6 flex justify-between items-end">
         <div>
           <h1 className="text-4xl font-serif font-black italic tracking-tighter text-slate-950 leading-none">Lex Publica</h1>
-          <p className="text-sm text-slate-500 uppercase tracking-widest font-bold italic mt-2">Simulateur Électoral • By A. Coulibaly</p>
+          <p className="text-sm text-slate-500 uppercase tracking-widest font-bold italic mt-2">Simulateur Électoral • L.262 & L.272-4-1</p>
         </div>
         <div className="flex gap-3">
           <button onClick={() => setShowHelp(true)} className="p-3 bg-amber-400 text-slate-950 rounded-2xl shadow-lg border-b-4 border-amber-600 hover:scale-105 transition-all"><Lightbulb /></button>
@@ -130,7 +134,6 @@ export default function App() {
         <section className="space-y-6">
           <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm space-y-8">
             
-            {/* TOGGLE RÉGIME JURIDIQUE */}
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] block text-center italic">1. Régime Juridique</label>
               <div className="flex p-1.5 bg-slate-100 rounded-2xl">
@@ -141,14 +144,13 @@ export default function App() {
 
             <hr className="border-slate-100" />
 
-            {/* SELECTION POPULATION / PLM */}
             <div className="space-y-6">
               {cityType === 'STANDARD' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <span className="text-[10px] font-black text-slate-400 uppercase ml-1">Strate de Population</span>
                     <div className="relative">
-                      <select value={rangeIndex} onChange={(e) => updateByRangeIndex(parseInt(e.target.value))} className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xs font-black appearance-none outline-none">
+                      <select value={rangeIndex} onChange={(e) => updateByRangeIndex(parseInt(e.target.value))} className="w-full p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl text-xs font-black appearance-none outline-none focus:ring-4 focus:ring-slate-100 transition-all">
                         {POPULATION_SEATS_MAPPING.map((range, idx) => (
                           <option key={idx} value={idx}>{range.max === Infinity ? `Plus de ${range.min.toLocaleString()} hab.` : `De ${range.min.toLocaleString()} à ${range.max.toLocaleString()} hab.`}</option>
                         ))}
@@ -156,9 +158,26 @@ export default function App() {
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                     </div>
                   </div>
+                  
                   <div className="space-y-2">
-                    <span className="text-[10px] font-black text-slate-400 uppercase ml-1">Population réelle</span>
-                    <input type="number" value={population} onChange={e => handlePopulationChange(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-lg font-black outline-none focus:ring-4 focus:ring-slate-100 transition-all" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase ml-1">Population & Sièges</span>
+                    <div className="flex gap-2">
+                      <input type="number" value={population} onChange={e => handlePopulationChange(e.target.value)} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-lg font-black outline-none focus:ring-4 focus:ring-slate-100 transition-all" placeholder="Population" />
+                      
+                      {/* LE SELECTEUR DE SIÈGES SYNCHRONISÉ */}
+                      <div className="relative shrink-0 w-32">
+                        <select 
+                          value={totalSeats} 
+                          onChange={(e) => updateBySeats(Number(e.target.value))}
+                          className="w-full h-full bg-slate-900 text-white px-2 rounded-2xl text-lg font-black appearance-none outline-none focus:ring-4 focus:ring-slate-400 transition-all text-center"
+                        >
+                          {POPULATION_SEATS_MAPPING.map((range, idx) => (
+                            <option key={idx} value={range.seats}>{range.seats} sièges</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                      </div>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -176,7 +195,6 @@ export default function App() {
               )}
             </div>
 
-            {/* EXPRIMÉS ET TOURS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block italic">2. Suffrages Exprimés</label>
@@ -192,7 +210,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* LES LISTES */}
           <div className="space-y-4">
              <div className="flex justify-between items-center px-4">
                 <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 italic flex items-center gap-2"><Scale className="w-4 h-4"/> Saisie des voix</h2>
@@ -202,19 +219,17 @@ export default function App() {
                {lists.map((l, index) => (
                  <div key={l.id} className="flex gap-3 items-center bg-white p-4 rounded-[1.5rem] border border-slate-200 shadow-sm hover:border-slate-400 transition-all">
                    <div className={`w-2 h-8 rounded-full ${['bg-indigo-500', 'bg-rose-500', 'bg-emerald-500', 'bg-amber-500'][index % 4]}`} />
-                   <input value={l.name} onChange={e => setLists(lists.map(item => item.id === l.id ? {...item, name: e.target.value} : item))} className="flex-grow p-1 text-sm font-black text-slate-800 outline-none uppercase tracking-tighter" />
+                   <input value={l.name} onChange={e => setLists(lists.map(item => item.id === l.id ? {...item, name: e.target.value} : item))} className="flex-grow p-1 text-xs md:text-sm font-black text-slate-800 outline-none uppercase tracking-tighter" />
                    <div className="relative">
-                    <input type="number" value={l.votes || ''} onChange={e => setLists(lists.map(item => item.id === l.id ? {...item, votes: e.target.value === '' ? 0 : Number(e.target.value)} : item))} className="w-24 p-2 text-right font-mono font-black text-slate-950 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-slate-900" />
+                    <input type="number" value={l.votes || ''} onChange={e => setLists(lists.map(item => item.id === l.id ? {...item, votes: e.target.value === '' ? 0 : Number(e.target.value)} : item))} className="w-28 md:w-36 p-3 text-right font-mono font-black text-slate-950 bg-slate-50 rounded-xl border border-slate-100 outline-none focus:ring-2 focus:ring-slate-900" />
                    </div>
                    <button onClick={() => setLists(lists.filter(item => item.id !== l.id))} className="p-2 text-slate-200 hover:text-rose-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
                  </div>
                ))}
-               {errorVotes && <p className="p-3 text-red-600 text-[10px] font-black text-center uppercase italic border-2 border-red-100 rounded-xl bg-red-50 animate-bounce mt-4">⚠️ Somme des voix ({sumOfVotes}) {'>'} Exprimés ({safeExprimés})</p>}
              </div>
           </div>
         </section>
 
-        {/* RÉSULTATS */}
         <section>
           <div className="bg-slate-950 text-white p-8 md:p-10 rounded-[4rem] shadow-2xl min-h-[600px] flex flex-col border-8 border-slate-900 sticky top-8">
             
@@ -227,24 +242,26 @@ export default function App() {
               </div>
             </div>
 
-            {errorPopulation || errorVotes ? (
+            {errorPopulation || errorVotes || errorNoAdmitted ? (
               <div className="flex-grow flex flex-col items-center justify-center text-center space-y-6">
                 <AlertCircle className="w-20 h-20 text-rose-500 animate-pulse" />
                 <p className="text-3xl font-black text-white uppercase tracking-tighter italic">Saisie Incohérente</p>
+                {errorNoAdmitted && <p className="text-rose-400 text-sm max-w-xs font-bold italic">Calcul bloqué : Aucune liste n'atteint le seuil légal de 5% des exprimés.</p>}
+                {(errorPopulation || errorVotes) && <p className="text-slate-500 text-sm max-w-xs font-bold italic">Vérifiez la cohérence mathématique des totaux.</p>}
               </div>
-            ) : result.noMajorityInFirstRound && round === 1 ? (
+            ) : !result ? null : result.noMajorityInFirstRound && round === 1 ? (
               <div className="flex-grow flex flex-col items-center justify-center text-center space-y-8">
                 <div className="p-8 bg-amber-500/10 rounded-full border-4 border-amber-500/30">
                   <AlertTriangle className="w-16 h-16 text-amber-500" />
                 </div>
                 <div>
                   <p className="text-4xl font-serif font-black italic text-amber-500 tracking-tighter uppercase mb-4 underline decoration-amber-900 decoration-8 underline-offset-[-2px]">Ballotage</p>
+                  <p className="text-slate-400 text-sm font-bold italic">La majorité absolue de {Math.floor(safeExprimés/2) + 1} voix n'est pas atteinte.</p>
                   <button onClick={() => setRound(2)} className="mt-8 px-10 py-4 bg-white text-slate-950 rounded-[2rem] font-black text-xs hover:scale-105 transition-transform shadow-xl">Simuler le 2nd Tour</button>
                 </div>
               </div>
             ) : (
               <>
-                {/* DIAGRAMME CIRCULAIRE RECHARTS */}
                 {result.admittedLists && result.admittedLists.length > 0 && (
                   <div className="h-48 w-full mb-8">
                     <ResponsiveContainer width="100%" height="100%">
@@ -260,14 +277,13 @@ export default function App() {
                   </div>
                 )}
 
-                {/* LISTE DES RÉSULTATS */}
                 <div className="space-y-4">
                   {result.admittedLists.filter(l => l.isAdmitted && l.totalSeats > 0).sort((a,b) => b.totalSeats - a.totalSeats).map((l, i) => (
                     <motion.div layout key={l.id} className={`p-6 rounded-[2rem] flex justify-between items-center transition-all ${i === 0 ? 'bg-emerald-500/10 border-2 border-emerald-500/30' : 'bg-white/5 border border-white/5'}`}>
                       <div className="flex items-center gap-4">
                         <div className={`text-3xl font-black italic tracking-tighter ${i === 0 ? 'text-emerald-400' : 'text-slate-600'}`}>{i + 1}</div>
                         <div>
-                          <p className="font-black text-xl leading-none uppercase">{l.name}</p>
+                          <p className="font-black text-lg md:text-xl leading-none uppercase">{l.name}</p>
                           <div className="mt-2 flex items-center gap-2">
                              <span className="text-[10px] font-black text-sky-400 bg-sky-400/10 px-2 py-0.5 rounded-md italic">{l.percentage.toFixed(2)}%</span>
                              <span className="text-[10px] text-slate-500 uppercase font-black tracking-tighter">{l.votes.toLocaleString()} voix</span>
@@ -276,7 +292,7 @@ export default function App() {
                       </div>
                       <div className="text-right">
                         <div className="flex items-baseline gap-1.5 justify-end">
-                           <span className={`text-5xl font-black tracking-tighter ${i === 0 ? 'text-emerald-400' : 'text-white'}`}>{l.totalSeats}</span>
+                           <span className={`text-4xl md:text-5xl font-black tracking-tighter ${i === 0 ? 'text-emerald-400' : 'text-white'}`}>{l.totalSeats}</span>
                            <span className={`text-[10px] font-black uppercase tracking-tighter mb-1 ${i === 0 ? 'text-emerald-600' : 'text-slate-500'}`}>{l.totalSeats > 1 ? 'Sièges' : 'Siège'}</span>
                         </div>
                         {i === 0 && <p className="text-[7px] font-black text-emerald-500 uppercase tracking-widest mt-1 italic leading-none">+ Prime {cityType === 'PLM' ? '25%' : '50%'}</p>}
